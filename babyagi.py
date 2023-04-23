@@ -7,6 +7,7 @@ from typing import Dict, List
 import importlib
 import openai
 import chromadb
+from termcolor import cprint, colored
 from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
 from dotenv import load_dotenv
 
@@ -21,11 +22,11 @@ LLM_MODEL = os.getenv("LLM_MODEL", os.getenv("OPENAI_API_MODEL", "gpt-3.5-turbo"
 # API Keys
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 if not (LLM_MODEL.startswith("llama") or LLM_MODEL.startswith("human")):
-    assert OPENAI_API_KEY, "\033[91m\033[1m" + "OPENAI_API_KEY environment variable is missing from .env" + "\033[0m\033[0m"
+    assert OPENAI_API_KEY, colored("OPENAI_API_KEY environment variable is missing from .env", "red", attrs=["bold"])
 
 # Table config
 RESULTS_STORE_NAME = os.getenv("RESULTS_STORE_NAME", os.getenv("TABLE_NAME", ""))
-assert RESULTS_STORE_NAME, "\033[91m\033[1m" + "RESULTS_STORE_NAME environment variable is missing from .env" + "\033[0m\033[0m"
+assert RESULTS_STORE_NAME, colored("RESULTS_STORE_NAME environment variable is missing from .env" , "red", attrs=["bold"])
 
 # Run configuration
 INSTANCE_NAME = os.getenv("INSTANCE_NAME", os.getenv("BABY_NAME", "BabyAGI"))
@@ -81,14 +82,14 @@ if DOTENV_EXTENSIONS:
 
 # Extensions support end
 
-print("\033[95m\033[1m"+"\n*****CONFIGURATION*****\n"+"\033[0m\033[0m")
+cprint("\n*****CONFIGURATION*****\n", "magenta", attrs=["bold"])
 print(f"Name  : {INSTANCE_NAME}")
 print(f"Mode  : {'alone' if COOPERATIVE_MODE in ['n', 'none'] else 'local' if COOPERATIVE_MODE in ['l', 'local'] else 'distributed' if COOPERATIVE_MODE in ['d', 'distributed'] else 'undefined'}")
 print(f"LLM   : {LLM_MODEL}")
 
 # Check if we know what we are doing
-assert OBJECTIVE, "\033[91m\033[1m" + "OBJECTIVE environment variable is missing from .env" + "\033[0m\033[0m"
-assert INITIAL_TASK, "\033[91m\033[1m" + "INITIAL_TASK environment variable is missing from .env" + "\033[0m\033[0m"
+assert OBJECTIVE, colored("OBJECTIVE environment variable is missing from .env", "red", attrs=["bold"])
+assert INITIAL_TASK, colored("INITIAL_TASK environment variable is missing from .env", "red", attrs=["bold"])
 
 LLAMA_MODEL_PATH = os.getenv("LLAMA_MODEL_PATH", "models/llama-13B/ggml-model.bin")
 if LLM_MODEL.startswith("llama"):
@@ -96,7 +97,7 @@ if LLM_MODEL.startswith("llama"):
         from llama_cpp import Llama
 
         print(f"LLAMA : {LLAMA_MODEL_PATH}" + "\n")
-        assert os.path.exists(LLAMA_MODEL_PATH), "\033[91m\033[1m" + f"Model can't be found." + "\033[0m\033[0m"
+        assert os.path.exists(LLAMA_MODEL_PATH), colored(f"Model can't be found.", "red", attrs=["bold"])
 
         CTX_MAX = 2048
         THREADS_NUM = 16
@@ -111,38 +112,37 @@ if LLM_MODEL.startswith("llama"):
             embedding=True, use_mlock=True,
         )
 
-        print(
-            "\033[91m\033[1m"
-            + "\n*****USING LLAMA.CPP. POTENTIALLY SLOW.*****"
-            + "\033[0m\033[0m"
+        cprint(
+            "\n*****USING LLAMA.CPP. POTENTIALLY SLOW.*****",
+            "red", attrs=["bold"]
         )
     else:
-        print(
-            "\033[91m\033[1m"
-            + "\nLlama LLM requires package llama-cpp. Falling back to GPT-3.5-turbo."
-            + "\033[0m\033[0m"
+        cprint(
+            "\nLlama LLM requires package llama-cpp. Falling back to GPT-3.5-turbo."
+            "red", attrs=["bold"]
         )
         LLM_MODEL = "gpt-3.5-turbo"
 
 if LLM_MODEL.startswith("gpt-4"):
-    print(
-        "\033[91m\033[1m"
-        + "\n*****USING GPT-4. POTENTIALLY EXPENSIVE. MONITOR YOUR COSTS*****"
-        + "\033[0m\033[0m"
+    cprint(
+        "\n*****USING GPT-4. POTENTIALLY EXPENSIVE. MONITOR YOUR COSTS*****",
+        "red", attrs=["bold"]
     )
 
 if LLM_MODEL.startswith("human"):
-    print(
-        "\033[91m\033[1m"
-        + "\n*****USING HUMAN INPUT*****"
-        + "\033[0m\033[0m"
+    cprint(
+        "\n*****USING HUMAN INPUT*****",
+        "red",
+        attrs=["bold"]
     )
 
-print("\033[94m\033[1m" + "\n*****OBJECTIVE*****\n" + "\033[0m\033[0m")
+cprint("\n*****OBJECTIVE*****\n", "blue", attrs=["bold"])
 print(f"{OBJECTIVE}")
 
-if not JOIN_EXISTING_OBJECTIVE: print("\033[93m\033[1m" + "\nInitial task:" + "\033[0m\033[0m" + f" {INITIAL_TASK}")
-else: print("\033[93m\033[1m" + f"\nJoining to help the objective" + "\033[0m\033[0m")
+if not JOIN_EXISTING_OBJECTIVE:
+    print(colored("\nInitial task:", "yellow", attrs=["bold"]) + f" {INITIAL_TASK}")
+else:
+    cprint(f"\nJoining to help the objective", "yellow", attrs=["bold"])
 
 # Configure OpenAI
 openai.api_key = OPENAI_API_KEY
@@ -212,10 +212,11 @@ if PINECONE_API_KEY:
         PINECONE_ENVIRONMENT = os.getenv("PINECONE_ENVIRONMENT", "")
         assert (
             PINECONE_ENVIRONMENT
-        ), "\033[91m\033[1m" + "PINECONE_ENVIRONMENT environment variable is missing from .env" + "\033[0m\033[0m"
+        ), colored("PINECONE_ENVIRONMENT environment variable is missing from .env", "red", attrs=["bold"])
         from extensions.pinecone_storage import PineconeResultsStorage
         results_storage = PineconeResultsStorage(OPENAI_API_KEY, PINECONE_API_KEY, PINECONE_ENVIRONMENT, LLM_MODEL, LLAMA_MODEL_PATH, RESULTS_STORE_NAME, OBJECTIVE)
-        print("\nReplacing results storage: " + "\033[93m\033[1m" +  "Pinecone" + "\033[0m\033[0m")
+        print("\nReplacing results storage: " + colored("Pinecone", "yellow", attrs=["bold"]))
+
 
 # Task storage supporting only a single instance of BabyAGI
 class SingleTaskListStorage:
@@ -232,8 +233,8 @@ class SingleTaskListStorage:
     def popleft(self):
         return self.tasks.popleft()
 
-    def is_empty(self):
-        return False if self.tasks else True
+    def __len__(self) -> bool:
+        return len(self.tasks)
 
     def next_task_id(self):
         self.task_id_counter += 1
@@ -252,7 +253,7 @@ if COOPERATIVE_MODE in ['l', 'local']:
         sys.path.append(str(Path(__file__).resolve().parent))
         from extensions.ray_tasks import CooperativeTaskListStorage
         tasks_storage = CooperativeTaskListStorage(OBJECTIVE)
-        print("\nReplacing tasks storage: " + "\033[93m\033[1m" +  "Ray" + "\033[0m\033[0m")
+        print("\nReplacing tasks storage: " + colored("Ray", "yellow", attrs=["bold"]))
 elif COOPERATIVE_MODE in ['d', 'distributed']:
     pass
 
@@ -406,6 +407,7 @@ def context_agent(query: str, top_results_num: int):
     # print(results)
     return results
 
+
 # Add the initial task if starting new objective
 if not JOIN_EXISTING_OBJECTIVE:
     initial_task = {
@@ -414,55 +416,54 @@ if not JOIN_EXISTING_OBJECTIVE:
     }
     tasks_storage.append(initial_task)
 
+
 def main ():
-    while True:
-        # As long as there are tasks in the storage...
-        if not tasks_storage.is_empty():
-            # Print the task list
-            print("\033[95m\033[1m" + "\n*****TASK LIST*****\n" + "\033[0m\033[0m")
-            for t in tasks_storage.get_task_names():
-                print(" • "+t)
+    while tasks_storage:
+        # Print the task list
+        cprint("\n*****TASK LIST*****\n", "magenta", attrs=["bold"])
+        for t in tasks_storage.get_task_names():
+            print(" • "+t)
 
-            # Step 1: Pull the first incomplete task
-            task = tasks_storage.popleft()
-            print("\033[92m\033[1m" + "\n*****NEXT TASK*****\n" + "\033[0m\033[0m")
-            print(task['task_name'])
+        # Step 1: Pull the first incomplete task
+        task = tasks_storage.popleft()
+        cprint("\n*****NEXT TASK*****\n", "green", attrs=["bold"])
+        print(task['task_name'])
 
-            # Send to execution function to complete the task based on the context
-            result = execution_agent(OBJECTIVE, task["task_name"])
-            print("\033[93m\033[1m" + "\n*****TASK RESULT*****\n" + "\033[0m\033[0m")
-            print(result)
+        # Send to execution function to complete the task based on the context
+        result = execution_agent(OBJECTIVE, task["task_name"])
+        cprint("\n*****TASK RESULT*****\n", "yellow", attrs=["bold"])
+        print(result)
 
-            # Step 2: Enrich result and store in the results storage
-            # This is where you should enrich the result if needed
-            enriched_result = {
-                "data": result
-            }  
-            # extract the actual result from the dictionary
-            # since we don't do enrichment currently
-            vector = enriched_result["data"]  
+        # Step 2: Enrich result and store in the results storage
+        # This is where you should enrich the result if needed
+        enriched_result = {
+            "data": result
+        }  
+        # extract the actual result from the dictionary
+        # since we don't do enrichment currently
+        vector = enriched_result["data"]  
 
-            result_id = f"result_{task['task_id']}"
+        result_id = f"result_{task['task_id']}"
 
-            results_storage.add(task, result, result_id, vector)
+        results_storage.add(task, result, result_id, vector)
 
-            # Step 3: Create new tasks and reprioritize task list
-            # only the main instance in cooperative mode does that
-            new_tasks = task_creation_agent(
-                OBJECTIVE,
-                enriched_result,
-                task["task_name"],
-                tasks_storage.get_task_names(),
-            )
+        # Step 3: Create new tasks and reprioritize task list
+        # only the main instance in cooperative mode does that
+        new_tasks = task_creation_agent(
+            OBJECTIVE,
+            enriched_result,
+            task["task_name"],
+            tasks_storage.get_task_names(),
+        )
 
-            for new_task in new_tasks:
-                new_task.update({"task_id": tasks_storage.next_task_id()})
-                tasks_storage.append(new_task)
+        for new_task in new_tasks:
+            new_task.update({"task_id": tasks_storage.next_task_id()})
+            tasks_storage.append(new_task)
 
-            if not JOIN_EXISTING_OBJECTIVE: prioritization_agent()
+        if not JOIN_EXISTING_OBJECTIVE: prioritization_agent()
 
-        # Sleep a bit before checking the task list again
         time.sleep(5) 
+
 
 if __name__ == "__main__":
     main()

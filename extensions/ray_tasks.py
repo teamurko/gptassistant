@@ -59,8 +59,8 @@ class CooperativeTaskListStorage:
     def popleft(self):
         return ray.get(self.actor.popleft.remote())
 
-    def is_empty(self):
-        return ray.get(self.actor.is_empty.remote())
+    def __bool__(self) -> bool:
+        return not ray.get(self.actor.is_empty.remote())
 
     def next_task_id(self):
         return ray.get(self.actor.next_task_id.remote())
